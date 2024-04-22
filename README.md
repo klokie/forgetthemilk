@@ -1,10 +1,11 @@
 # forgetthemilk
+
 A small script to convert the JSON exported by Remember The Milk into a CSV format file that Todoist will ingest as a project template
 
 Usage is dirt simple:
 
-```
-cpatti$ ./forgetthemilk.py  --help
+```sh
+$ ./forgetthemilk.py  --help
 usage: forgetthemilk.py [-h] rtm_json csv_result
 
 positional arguments:
