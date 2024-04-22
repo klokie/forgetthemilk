@@ -63,37 +63,29 @@ def write_header(writer):
 
 
 def get_location_from_task(task, locations):
+    result = None
     try:
-        location = task.get("location_id", "")
-        if location != "":
-            # FIXME get location
-            location = [
-                location
-                for location in locations
-                if location.get("location_id") == task.get("location_id")
-            ]
-
-            # TODO parse location
+        location_id = task.get("location_id")
+        for location in locations:
+            if location["id"] == location_id:
+                return location["name"]
     except Exception as e:
         print(f"Error processing location: {e}", task)
-    finally:
-        return location
+    return result
 
 
 def get_list_from_task(task, lists):
+    result = None
     try:
-        mylist = task.get("list_id", "")
-        if mylist != "":
-            # FIXME get list
-            mylist = [
-                mylist
-                for mylist in lists
-                if mylist.get("list_id") == task.get("list_id")
-            ]
+        list_id = task.get("list_id", "")
+        if list_id != "":
+            for lst in lists:
+                if lst["id"] == list_id:
+                    # print("lst", lst)
+                    return lst["name"]
     except Exception as e:
         print(f"Error processing list_id: {e}", task)
-    finally:
-        return mylist
+    return result
 
 
 def write_notes(writer, url, date_created, date_modified, location, mylist, tags):
@@ -114,20 +106,21 @@ def write_notes(writer, url, date_created, date_modified, location, mylist, tags
     notes = "; ".join(notes)
 
     if notes:
+        # write notes to line after task
         writer.writerow(
             [
-                "Note",  # "TYPE", # Task | Note # TODO write notes to line after task
-                notes,  # "CONTENT", # Task Name or Note Content
-                None,  # "DESCRIPTION", # Notes # TODO determine from task notes
-                None,  # "PRIORITY", # 1-4 # TODO determine from task priority
-                None,  # "INDENT", # 1-4 # TODO determine from task indent
-                None,  # "AUTHOR", # User # TODO leave blank
-                None,  # "RESPONSIBLE", # User # TODO leave blank
-                None,  # "DATE", # Due Date # TODO determine from task due date; set recurring tasks if "repeat_every": true,
-                None,  # "DATE_LANG", # en | sv # TODO determine from language of task name and notes
-                None,  # "TIMEZONE", # UTC # TODO determine from user settings
-                None,  # "DURATION", # 0 # TODO determine from task duration # TODO leave blank
-                None,  # "DURATION_UNIT", # day # TODO determine from task duration # TODO leave blank
+                "Note",  # "TYPE", # Task | Note
+                notes,  # "CONTENT"
+                None,  # "DESCRIPTION"
+                None,  # "PRIORITY"
+                None,  # "INDENT"
+                None,  # "AUTHOR"
+                None,  # "RESPONSIBLE"
+                None,  # "DATE"
+                None,  # "DATE_LANG"
+                None,  # "TIMEZONE"
+                None,  # "DURATION"
+                None,  # "DURATION_UNIT"
             ]
         )
 
@@ -144,7 +137,6 @@ def get_tags_from_task(task, tags):
 def compile_notes(notes, task):
     try:
         # Compile notes with the same series_id as task.series_id
-        # TODO check task.get("notes", "")
         task_notes = [
             note for note in notes if note.get("series_id") == task.get("series_id")
         ]
@@ -189,13 +181,13 @@ def write_tasks(writer, name, description, due_date, priority, indent=1):
             description,  # "DESCRIPTION", # Notes # TODO determine from task notes
             priority,  # "PRIORITY", # 1-4 # TODO determine from task priority
             indent,  # "INDENT", # 1-4 # TODO determine from task indent
-            None,  # "AUTHOR", # User # TODO leave blank
-            None,  # "RESPONSIBLE", # User # TODO leave blank
+            None,  # "AUTHOR", # User
+            None,  # "RESPONSIBLE", # User
             due_date,  # "DATE", # Due Date # TODO determine from task due date; set recurring tasks if "repeat_every": true,
             "en" if due_date is not None else None,  # "DATE_LANG",
             None,  # "TIMEZONE", # UTC # TODO determine from user settings
-            None,  # "DURATION", # 0 # TODO determine from task duration # TODO leave blank
-            None,  # "DURATION_UNIT", # day # TODO determine from task duration # TODO leave blank
+            None,  # "DURATION", # 0 # TODO determine from task duration
+            None,  # "DURATION_UNIT", # day # TODO determine from task duration
         ]
     )
 
@@ -220,10 +212,13 @@ def write_data(writer, tasks, notes, locations, lists, tags):
             name = task.get("name", "untitled")
             url = task.get("url", "")
 
-            due_date = date_from_int(task.get("date_due", ""))
             date_created = date_from_int(task.get("date_created", ""))
             date_modified = date_from_int(task.get("date_modified", ""))
             # indent = task.get("indent", 1)  # Default indent level
+
+            due_date = date_from_int(task.get("date_due", ""))
+
+            # TODO parse "estimate" if set => DURATION,DURATION_UNIT
 
             priority = get_priority_from_task(task)
             location = get_location_from_task(task, locations)
@@ -236,6 +231,7 @@ def write_data(writer, tasks, notes, locations, lists, tags):
             # Combine the notes into a single string
             description = get_description(task_notes)
 
+            # TODO parse "date_due_has_time" if set
             due_date = parse_due_date(due_date)
 
             write_tasks(writer, name, description, due_date, priority)
